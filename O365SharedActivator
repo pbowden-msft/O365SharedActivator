@@ -1,0 +1,170 @@
+#!/bin/sh
+#set -x
+
+TOOL_NAME="Microsoft Office 365 Mac Shared Subscription Activator"
+TOOL_VERSION="1.0"
+
+## Copyright (c) 2016 Microsoft Corp. All rights reserved.
+## Scripts are not supported under any Microsoft standard support program or service. The scripts are provided AS IS without warranty of any kind.
+## Microsoft disclaims all implied warranties including, without limitation, any implied warranties of merchantability or of fitness for a 
+## particular purpose. The entire risk arising out of the use or performance of the scripts and documentation remains with you. In no event shall
+## Microsoft, its authors, or anyone else involved in the creation, production, or delivery of the scripts be liable for any damages whatsoever 
+## (including, without limitation, damages for loss of business profits, business interruption, loss of business information, or other pecuniary 
+## loss) arising out of the use of or inability to use the sample scripts or documentation, even if Microsoft has been advised of the possibility
+## of such damages.
+## Feedback: pbowden@microsoft.com
+
+# Constants
+SCRIPTPATH=$( cd $(dirname $0) ; pwd -P )
+SHAREDLICENSE="/Library/Application Support/Microsoft/Office365/com.microsoft.Office365.plist"
+O365SUBMAIN="$HOME/Library/Group Containers/UBF8T346G9.Office/com.microsoft.Office365.plist"
+
+
+function ShowUsage {
+# Shows tool usage and parameters
+	echo $TOOL_NAME - $TOOL_VERSION
+	echo "Purpose: Allows all users on the same computer to share the same Office 365 Subscription"
+	echo "Usage: O365SharedActivator [--master] [--serialize] [--deactivate]"
+	echo "Example: O365SharedActivator --master      (Sets the current users subscription as the master license for this computer)"
+	echo "Example: O365SharedActivator --serialize   (Allows the logged-on user to consume the master license)"
+	echo "Example: O365SharedActivator --deactivate  (Removes the master license from this computer)"
+	echo
+	exit 0
+}
+
+function DetectLicense {
+# Checks to see if a license file is present
+	local LICENSEPATH="$1"
+	if [ -f "$LICENSEPATH" ]; then
+		echo "1"
+	else
+		echo "0"
+	fi
+}
+
+function SetLicenseAsMaster {
+# Copies the current O365 license to a designated shared area
+	PRIVS=$(GetSudo)
+	if [ "$PRIVS" == "1" ]; then
+		echo "1"
+		return
+	else
+		if [ ! -d "/Library/Application Support/Microsoft/Office365" ]; then
+			sudo mkdir "/Library/Application Support/Microsoft/Office365"
+		fi
+		sudo cp -f "$O365SUBMAIN" "$SHAREDLICENSE"
+	fi
+}
+
+function CopyMasterLicense {
+# Copies the master license to the current users folder
+	if [ ! -d "$HOME/Library/Group Containers/UBF8T346G9.Office" ]; then
+		mkdir "$HOME/Library/Group Containers/UBF8T346G9.Office"
+	fi
+	cp -f "$SHAREDLICENSE" "$O365SUBMAIN"
+}
+
+function RemoveMasterLicense {
+# Removes the license file from the designated shared area
+	PRIVS=$(GetSudo)
+	if [ "$PRIVS" == "1" ]; then
+			echo "1"
+			return
+		else
+			sudo rm -f "$SHAREDLICENSE"
+		fi
+}
+
+function GetSudo {
+# Checks to see if the user has root-level permissions
+	if [ "$EUID" != "0" ]; then
+		sudo -p "Enter administrator password: " echo
+		if [ $? -eq 0 ] ; then
+			echo "0"
+		else
+			echo "1"
+		fi
+	fi
+}
+
+# Evaluate command-line arguments
+if [[ $# = 0 ]]; then
+	ShowUsage
+else
+	for KEY in "$@"
+	do
+	case $KEY in
+    	--Help|-?|--help)
+    	ShowUsage
+    	shift # past argument
+    	;;
+    	--master|-m)
+    	SETMASTER=true
+    	shift # past argument
+		;;
+		--deactivate|-d)
+		DEACTIVATE=true
+		shift # past argument
+		;;
+		--serialize|-s)
+		SERIALIZE=true
+		shift # past argument
+		;;
+		*)
+    	ShowUsage
+    	;;
+    esac
+	shift # past argument or value
+	done
+fi
+
+## Main
+if [ $SETMASTER ]; then
+	O365LICENSEPRESENT=$(DetectLicense "$O365SUBMAIN")
+	if [ "$O365LICENSEPRESENT" == "1" ]; then
+		SetLicenseAsMaster
+		MASTERPRESENT=$(DetectLicense "$SHAREDLICENSE")
+		if [ "$MASTERPRESENT" == "1" ]; then
+			echo "Master license set successfully."
+		else
+			echo "ERROR: The master license could not be set on this computer."
+			exit 1
+		fi
+	else
+		echo "ERROR: The current user account does not have a valid Office 365 Subscription."
+		exit 1
+	fi
+	
+elif [ $DEACTIVATE ]; then
+	MASTERPRESENT=$(DetectLicense "$SHAREDLICENSE")
+	if [ "$MASTERPRESENT" == "1" ]; then
+		RemoveMasterLicense
+		MASTERVERIFY=$(DetectLicense "$SHAREDLICENSE")
+		if [ "$MASTERVERIFY" == "0" ]; then
+			echo "Master license successfully removed."
+		else
+			echo "ERROR: The master license could not be removed."
+			exit 1
+		fi
+	else
+		echo "WARNING: The master license does not exist on this computer."
+	fi
+
+elif [ $SERIALIZE ]; then
+	MASTERPRESENT=$(DetectLicense "$SHAREDLICENSE")
+	if [ "$MASTERPRESENT" == "1" ]; then
+		CopyMasterLicense
+		USERVERIFY=$(DetectLicense "$O365SUBMAIN")
+		if [ "$USERVERIFY" == "1" ]; then
+			echo "The current user has been serialized with the master license from this computer."
+		else
+			echo "ERROR: The master license could not be used for serialization."
+			exit 1
+		fi
+	else
+		echo "WARNING: The master license does not exist on this computer."
+	fi
+fi
+	
+
+exit 0
