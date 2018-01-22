@@ -10,4 +10,4 @@ Example: `O365SharedActivator --deactivate`  (Removes the master license from th
 
 Compatible when running as a login script under Jamf Pro</br>
 Copy the script to `/Library/Application Support/Microsoft/`</br>
-Use `/Library/Application Support/Microsoft/O365SharedActivator --serialize --user:$3` in the login script
+Use `/Library/Application\ Support/Microsoft/O365SharedActivator --serialize --user:$3` in the login script
