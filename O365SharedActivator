@@ -2,9 +2,9 @@
 #set -x
 
 TOOL_NAME="Microsoft Office 365 Mac Shared Subscription Activator"
-TOOL_VERSION="1.1"
+TOOL_VERSION="1.2"
 
-## Copyright (c) 2016 Microsoft Corp. All rights reserved.
+## Copyright (c) 2018 Microsoft Corp. All rights reserved.
 ## Scripts are not supported under any Microsoft standard support program or service. The scripts are provided AS IS without warranty of any kind.
 ## Microsoft disclaims all implied warranties including, without limitation, any implied warranties of merchantability or of fitness for a 
 ## particular purpose. The entire risk arising out of the use or performance of the scripts and documentation remains with you. In no event shall
@@ -14,20 +14,26 @@ TOOL_VERSION="1.1"
 ## of such damages.
 ## Feedback: pbowden@microsoft.com
 
+function SetConstants {
 # Constants
-SCRIPTPATH=$( cd $(dirname $0) ; pwd -P )
-SHAREDLICENSE="/Library/Application Support/Microsoft/Office365/com.microsoft.Office365.plist"
-O365SUBMAIN="$HOME/Library/Group Containers/UBF8T346G9.Office/com.microsoft.Office365.plist"
+	SHAREDLICENSE="/Library/Application Support/Microsoft/Office365/com.microsoft.Office365.plist"
+	O365SUBMAIN="$HOME/Library/Group Containers/UBF8T346G9.Office/com.microsoft.Office365.plist"
+}
 
+function GetHomeFolder {
+# HOME folder detection
+	HOME=$(dscl . read /Users/"$1" NFSHomeDirectory | cut -d ':' -f2 | cut -d ' ' -f2)
+}
 
 function ShowUsage {
 # Shows tool usage and parameters
 	echo $TOOL_NAME - $TOOL_VERSION
 	echo "Purpose: Allows all users on the same computer to share the same Office 365 Subscription"
-	echo "Usage: O365SharedActivator [--master] [--serialize] [--deactivate]"
-	echo "Example: O365SharedActivator --master      (Sets the current users subscription as the master license for this computer)"
-	echo "Example: O365SharedActivator --serialize   (Allows the logged-on user to consume the master license)"
-	echo "Example: O365SharedActivator --deactivate  (Removes the master license from this computer)"
+	echo "Usage: O365SharedActivator [--master] [--serialize] [--deactivate] [--user:<name>]"
+	echo "Example: O365SharedActivator --master                (Sets the current users subscription as the master license for this computer)"
+	echo "Example: O365SharedActivator --serialize             (Allows the logged-on user to consume the master license)"
+	echo "Example: O365SharedActivator --serialize --user:$3   (Used to serialize user accounts when running as a Jamf login script)"
+	echo "Example: O365SharedActivator --deactivate            (Removes the master license from this computer)"
 	echo
 	exit 0
 }
@@ -51,6 +57,7 @@ function SetLicenseAsMaster {
 	else
 		if [ ! -d "/Library/Application Support/Microsoft/Office365" ]; then
 			sudo mkdir -p "/Library/Application Support/Microsoft/Office365"
+			sudo chown -R $USER: "$HOME/Library/Group Containers"
 		fi
 		sudo cp -f "$O365SUBMAIN" "$SHAREDLICENSE"
 	fi
@@ -101,16 +108,21 @@ else
     	--master|-m)
     	SETMASTER=true
     	shift # past argument
-		;;
-		--deactivate|-d)
-		DEACTIVATE=true
-		shift # past argument
-		;;
-		--serialize|-s)
-		SERIALIZE=true
-		shift # past argument
-		;;
-		*)
+	;;
+	--deactivate|-d)
+	DEACTIVATE=true
+	shift # past argument
+	;;
+	--serialize|-s)
+	SERIALIZE=true
+	shift # past argument
+	;;
+	--user:*|-u:*)
+	USER=${KEY#*:}
+	GetHomeFolder "$USER"
+	shift # past argument
+	;;
+	*)
     	ShowUsage
     	;;
     esac
@@ -119,6 +131,7 @@ else
 fi
 
 ## Main
+SetConstants
 if [ $SETMASTER ]; then
 	O365LICENSEPRESENT=$(DetectLicense "$O365SUBMAIN")
 	if [ "$O365LICENSEPRESENT" == "1" ]; then
