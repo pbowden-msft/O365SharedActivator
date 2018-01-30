@@ -24,7 +24,11 @@ function GetHomeFolder {
 # HOME folder detection
 	HOME=$(dscl . read /Users/"$1" NFSHomeDirectory | cut -d ':' -f2 | cut -d ' ' -f2)
 	if [ "$HOME" == "" ]; then
-		HOME="/Users/"$1"
+		if [ -d "/Users/$1" ]; then
+			HOME="/Users/$1"
+		else
+			HOME=$(eval echo "~$1")
+		fi
 	fi
 }
 
