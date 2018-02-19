@@ -2,7 +2,7 @@
 #set -x
 
 TOOL_NAME="Microsoft Office 365 Mac Shared Subscription Activator"
-TOOL_VERSION="1.4"
+TOOL_VERSION="1.5"
 
 ## Copyright (c) 2018 Microsoft Corp. All rights reserved.
 ## Scripts are not supported under any Microsoft standard support program or service. The scripts are provided AS IS without warranty of any kind.
@@ -64,7 +64,6 @@ function SetLicenseAsMaster {
 	else
 		if [ ! -d "/Library/Application Support/Microsoft/Office365" ]; then
 			sudo mkdir -p "/Library/Application Support/Microsoft/Office365"
-			sudo chown -R $USER: "$HOME/Library/Group Containers"
 		fi
 		sudo cp -f "$O365SUBMAIN" "$SHAREDLICENSE"
 	fi
@@ -74,8 +73,10 @@ function CopyMasterLicense {
 # Copies the master license to the current users folder
 	if [ ! -d "$HOME/Library/Group Containers/UBF8T346G9.Office" ]; then
 		mkdir -p "$HOME/Library/Group Containers/UBF8T346G9.Office"
+		sudo chown -R "$USER" "$HOME/Library/Group Containers"
 	fi
 	cp -f "$SHAREDLICENSE" "$O365SUBMAIN"
+	sudo chown -R "$USER" "$O365SUBMAIN"
 }
 
 function RemoveMasterLicense {
