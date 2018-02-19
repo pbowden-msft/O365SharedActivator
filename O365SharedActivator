@@ -72,8 +72,8 @@ function SetLicenseAsMaster {
 
 function CopyMasterLicense {
 # Copies the master license to the current users folder
-	if [ ! -d "$HOME/Library/Group Containers/UBF8T346G9.Office" ]; then
-		mkdir -p "$HOME/Library/Group Containers/UBF8T346G9.Office"
+	if [ ! -d "$O365PRODUCT" ]; then
+		mkdir -p "$O365PRODUCT"
 		sudo chown -R "$USER" "$HOME/Library/Group Containers"
 	fi
 	cp -f "$SHAREDLICENSE" "$O365SUBMAIN"
