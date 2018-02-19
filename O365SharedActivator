@@ -2,7 +2,7 @@
 #set -x
 
 TOOL_NAME="Microsoft Office 365 Mac Shared Subscription Activator"
-TOOL_VERSION="1.5"
+TOOL_VERSION="1.6"
 
 ## Copyright (c) 2018 Microsoft Corp. All rights reserved.
 ## Scripts are not supported under any Microsoft standard support program or service. The scripts are provided AS IS without warranty of any kind.
@@ -41,6 +41,7 @@ function ShowUsage {
 	echo "Example: O365SharedActivator --master                (Sets the current users subscription as the master license for this computer)"
 	echo "Example: O365SharedActivator --serialize             (Allows the logged-on user to consume the master license)"
 	echo "Example: O365SharedActivator --serialize --user:$3   (Used to serialize user accounts when running as a Jamf login script)"
+	echo "Example: O365SharedActivator --filltemplate          (Allows new users to consume the master license)"
 	echo "Example: O365SharedActivator --deactivate            (Removes the master license from this computer)"
 	echo
 	exit 0
@@ -78,6 +79,15 @@ function CopyMasterLicense {
 	fi
 	cp -f "$SHAREDLICENSE" "$O365SUBMAIN"
 	sudo chown -R "$USER" "$O365PRODUCT"
+}
+
+function FillTemplateWithMasterLicense {
+	# Fill excisting users
+	for TEMPLATELANG in /System/Library/User\ Template/*; do
+	# Copies the master license to the user template
+		mkdir -p "$TEMPLATELANG/Library/Group Containers/UBF8T346G9.Office"
+		cp -f "$SHAREDLICENSE" "$TEMPLATELANG/Library/Group Containers/UBF8T346G9.Office/"
+	done
 }
 
 function RemoveMasterLicense {
@@ -124,6 +134,10 @@ else
 	;;
 	--serialize|-s)
 	SERIALIZE=true
+	shift # past argument
+	;;
+	--filltemplate)
+	FILLTEMPLATE=true
 	shift # past argument
 	;;
 	--user:*|-u:*)
@@ -186,7 +200,15 @@ elif [ $SERIALIZE ]; then
 	else
 		echo "WARNING: The master license does not exist on this computer."
 	fi
+
+elif [ $FILLTEMPLATE ]; then
+	MASTERPRESENT=$(DetectLicense "$SHAREDLICENSE")
+	if [ "$MASTERPRESENT" == "1" ]; then
+		FillTemplateWithMasterLicense
+		echo "Future users that will be created has been serialized with the master license from this computer."
+	else
+		echo "WARNING: The master license does not exist on this computer."
+	fi
 fi
-	
 
 exit 0
