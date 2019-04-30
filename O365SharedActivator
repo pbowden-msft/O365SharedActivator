@@ -2,9 +2,9 @@
 #set -x
 
 TOOL_NAME="Microsoft Office 365 Mac Shared Subscription Activator"
-TOOL_VERSION="1.6"
+TOOL_VERSION="1.7"
 
-## Copyright (c) 2018 Microsoft Corp. All rights reserved.
+## Copyright (c) 2019 Microsoft Corp. All rights reserved.
 ## Scripts are not supported under any Microsoft standard support program or service. The scripts are provided AS IS without warranty of any kind.
 ## Microsoft disclaims all implied warranties including, without limitation, any implied warranties of merchantability or of fitness for a 
 ## particular purpose. The entire risk arising out of the use or performance of the scripts and documentation remains with you. In no event shall
@@ -37,7 +37,7 @@ function ShowUsage {
 # Shows tool usage and parameters
 	echo $TOOL_NAME - $TOOL_VERSION
 	echo "Purpose: Allows all users on the same computer to share the same Office 365 Subscription"
-	echo "Usage: O365SharedActivator [--master] [--serialize] [--deactivate] [--user:<name>]"
+	echo "Usage: O365SharedActivator [--jamf] [--master] [--serialize] [--deactivate] [--user:<name>]"
 	echo "Example: O365SharedActivator --master                (Sets the current users subscription as the master license for this computer)"
 	echo "Example: O365SharedActivator --serialize             (Allows the logged-on user to consume the master license)"
 	echo "Example: O365SharedActivator --serialize --user:$3   (Used to serialize user accounts when running as a Jamf login script)"
@@ -117,6 +117,15 @@ function GetSudo {
 if [[ $# = 0 ]]; then
 	ShowUsage
 else
+  # If running under Jamf there will be three arguments provided by Jamf, check for user provided --jamf argument.
+  if [[ $# -gt 3 ]]; then
+    for KEY in "$@"
+    do
+      if [[ "$KEY" =~ ^(--jamf|--Jamf)$ ]]; then
+        shift 3 # Running under Jamf, ignore first three arguments
+      fi
+    done
+  fi
 	for KEY in "$@"
 	do
 	case $KEY in
@@ -124,6 +133,10 @@ else
     	ShowUsage
     	shift # past argument
     	;;
+    	--Jamf|-j|--jamf)
+    	JAMF=true
+    	shift # past argument
+	;;
     	--master|-m)
     	SETMASTER=true
     	shift # past argument
@@ -144,6 +157,9 @@ else
 	USER=${KEY#*:}
 	GetHomeFolder "$USER"
 	shift # past argument
+	;;
+	'') #ignore empty string arguments passed by Jamf
+    	shift # past argument
 	;;
 	*)
     	ShowUsage
