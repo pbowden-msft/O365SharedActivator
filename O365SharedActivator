@@ -2,7 +2,7 @@
 #set -x
 
 TOOL_NAME="Microsoft Office 365 Mac Shared Subscription Activator"
-TOOL_VERSION="1.7"
+TOOL_VERSION="1.8"
 
 ## Copyright (c) 2019 Microsoft Corp. All rights reserved.
 ## Scripts are not supported under any Microsoft standard support program or service. The scripts are provided AS IS without warranty of any kind.
@@ -16,9 +16,9 @@ TOOL_VERSION="1.7"
 
 function SetConstants {
 # Constants
-	SHAREDLICENSE="/Library/Application Support/Microsoft/Office365/com.microsoft.Office365.plist"
+	SHAREDLICENSE="/Library/Application Support/Microsoft/Office365/com.microsoft.Office365V2.plist"
 	O365PRODUCT="$HOME/Library/Group Containers/UBF8T346G9.Office"
-	O365SUBMAIN="$O365PRODUCT/com.microsoft.Office365.plist"
+	O365SUBMAIN="$O365PRODUCT/com.microsoft.Office365V2.plist"
 }
 
 function GetHomeFolder {
